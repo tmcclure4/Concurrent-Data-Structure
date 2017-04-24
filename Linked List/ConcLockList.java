@@ -40,7 +40,7 @@ public class ConcLockList { //Adapted from Herlihy's Book
       pred.unlock();
     }
   }
-  public boolean remove(int index, Object item) {
+  public boolean remove(int index) {
     if(index < 0) return false;
     Node pred = null, curr = null;
     int currIndex = 0;
@@ -60,6 +60,32 @@ public class ConcLockList { //Adapted from Herlihy's Book
         }
         pred.next = curr.next;      // Delete current node
         return true;
+      } finally {
+        curr.unlock();
+      }
+    } finally {
+      pred.unlock();
+    }
+  }
+  public boolean remove(Object item) {
+    Node pred = null, curr = null;
+    head.lock();
+    try {
+      pred = head;
+      curr = pred.next;
+      curr.lock();
+      try {
+        while (item.equals(curr.item) != true && curr != this.tail) {
+          pred.unlock();
+          pred = curr;
+          curr = curr.next;
+          curr.lock();
+        }
+        if(curr == this.tail) return false;
+        else {
+            pred.next = curr.next;
+            return true;
+        }
       } finally {
         curr.unlock();
       }
