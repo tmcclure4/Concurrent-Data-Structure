@@ -1,5 +1,4 @@
 import java.util.*;
-import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,31 +25,10 @@ class Node {
         next.set(n);
     }
 
-    /*
-    public void release() {
-        this.refCount.decrementAndGet();
-    }
-    public Node safereadNext() {
-        while(true) {
-            Node NextNode = this.next.get();
-            if(NextNode == null) return NextNode;
-            NextNode.refCount.incrementAndGet();        // Increment refCount of the next node before reference
-            if(this.next.get() == NextNode) {
-                return NextNode;
-            }
-            else {
-                NextNode.release();                     // Decrement refCount if not referenced in the end
-            }
-        }
-    } */
-
     public boolean compareAndSetNext(Node OldValue, Node SetValue) {
         boolean retVal = this.next.compareAndSet(OldValue, SetValue);
-        if(retVal) {
-            System.out.println("CAS success");
-        }
-        else {
-            System.out.println("CAS failure");
+        if(retVal == false) {
+           System.out.println("CAS failure");
         }
         return retVal;
     }
@@ -71,6 +49,9 @@ class LockfreeIterator {
         this.DataNode = dnode;
     }
 
+    public Object get() {
+        return DataNode.data;
+    }
     // Find the data node given the previous node and the auxiliary node;
     // clear redundant auxiliary nodes between the data nodes
     public void update() {
@@ -81,7 +62,7 @@ class LockfreeIterator {
         Node nNode = pNode.nextNode();
         while(nNode != null && nNode.isAuxNode == true) {
             // Debug print
-            System.out.println("Update iterator");
+            // System.out.println("Update iterator");
             // Only set PrevDataNode.next when no nodes are added in between
             this.PrevDataNode.compareAndSetNext(pNode, nNode);
             pNode = nNode;
@@ -150,7 +131,7 @@ class LockfreeLinkedList {
     // Insert at the position of iterator i, and move forward the iterator
     public boolean insert(LockfreeIterator i, Object data) {
         while(true) {
-            i.update();
+            i.update();                         // You cannot miss this.
             // Create new data node and its aux node
             Node newDataNode = new Node(data);
             Node newAuxNode = new Node();
@@ -198,6 +179,7 @@ class LockfreeLinkedList {
                 this.length.decrementAndGet();
                 break;
             }
+            i.update();                 // You cannot miss this.
         }
         i.update();
         return true;
