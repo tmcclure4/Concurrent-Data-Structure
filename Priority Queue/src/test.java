@@ -1,22 +1,26 @@
 
 public class test {
 	public static void main(String[] args){
-		PriorityQueue testing = new PriorityQueue();
+		PriorityQueueLockFree testing = new PriorityQueueLockFree();
 		
-		
-		
-		
-		
-		testing.add(5);
-		testing.add(2);
 		testing.add(10);
-		testing.add(70);
-		testing.add(54);
-		testing.add(32);
-		testing.add(1);
-		testing.add(70);
-		Object[] tempthing=testing.toArray();
-		testing.print();
+		testing.printNodes();
+		
+		testing.add(30);
+		testing.printNodes();
+		
+		//testing.add(5);
+		//testing.add(2);
+	//	testing.add(10);
+		//testing.add(70);
+		//testing.add(54);
+		//testing.add(32);
+		//testing.add(1);
+		//testing.add(70);
+		//Object[] tempthing=testing.toArray();
+		//testing.print();
+		//testing.remove(5);
+		//testing.print();
 			
 		/*
 		System.out.println(testing.poll());

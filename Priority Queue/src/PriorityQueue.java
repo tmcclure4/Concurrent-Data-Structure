@@ -1,16 +1,19 @@
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class PriorityQueue<T extends Comparable<T>, E> {
 	
 	private ArrayList<T> heap;//array list used as a heap
-	
-	
+	//private ArrayList<T> newHeap;//array list used as a heap
+	private AtomicReference<ArrayList<T>> atomicRef;
 	
 	PriorityQueue(){
 		heap=new ArrayList<T>();
 		heap.add(null);//index 0 is nothing in a heap, so make it null
+		//atomicRef = new AtomicReference();
 	}
 	
 	
@@ -27,7 +30,6 @@ public class PriorityQueue<T extends Comparable<T>, E> {
 		}
 		else{
 			heap.add(input);//put new element in the back of the array
-			
 			this.organizeHeap();
 		}
 		return true;
@@ -127,14 +129,21 @@ public class PriorityQueue<T extends Comparable<T>, E> {
 	 * element from this queue, if it is present.
 	 */
 	public boolean remove(Object o){
-		for(int count=1; count<heap.size(); count++){
-			if(heap.get(count).equals(o)){//found the element so remove it and reorder the heap
-				
-				//put the right most node in the node that was just removed and remove the right most node
-				heap.set(count,heap.get(heap.size()-1));
-				heap.remove(heap.size()-1);
-				reorderHeapTopBottom(count, heap);
-				return true;
+		if(heap.size()>0){
+			//T lastValue=heap.get(heap.size()-1);
+			
+			for(int count=1; count<heap.size(); count++){
+				atomicRef.set(heap);
+			if(heap.get(count).equals(o)){
+				/*if(atomicRef.compareAndSet(heap,newHeap)){//found the element so remove it and reorder the heap
+					//if(atomicRef.compareAndSet());
+					//put the right most node in the node that was just removed and remove the right most node
+					//heap.set(count,heap.get(heap.size()-1));
+					heap.remove(heap.size()-1);
+					reorderHeapTopBottom(count, heap);
+					return true;
+				}*/
+			}
 			}
 		}
 		return false;
@@ -157,8 +166,13 @@ public class PriorityQueue<T extends Comparable<T>, E> {
 	}
 	
 	
+	/****************************************************************************************************************
+	 * This method returns an array containing all of the elements in this queue; 
+	 * the runtime type of the returned array is that of the specified array.
+	 * TODO
+	 */
 	public <T> T[] toArray(T[] a){
-		return a;
+		return convertHeapToArray(a);
 	}
 	
 	
@@ -183,11 +197,12 @@ public class PriorityQueue<T extends Comparable<T>, E> {
 		//keep doing this until the leaf node is less than the parent, of the new value is the root
 		int index=heap.size()-1;
 		T tempStorage;
-		while(index!=1){
+		while(index!=1){ 
 			if((heap.get(index)).compareTo(heap.get(index/2))>0){//new value is greater than the parent node, swap the two values
 				tempStorage=heap.get(index);
 				heap.set(index,heap.get(index/2));
 				heap.set(index/2, tempStorage);
+				
 				index=index/2;//set the new index value
 			}
 			else{//new value isn't greater than the parent
@@ -264,8 +279,17 @@ public class PriorityQueue<T extends Comparable<T>, E> {
 			removeAndReorder(copyheap);
 		}
 		return elementArray;
-		
 	}
 	
+	
+	/**
+	 * TODO
+	 */
+	protected <T> T[] convertHeapToArray(T[] tempArray){
+		//T[] tempHeapArray = new T[tempArray.length];
+		//E[] temp = Array.newInstance(tempArray, tempArray.length); 	
+		return null;
+		
+	}
 	
 }
