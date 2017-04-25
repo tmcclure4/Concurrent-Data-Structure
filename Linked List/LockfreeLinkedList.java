@@ -169,6 +169,7 @@ class LockfreeLinkedList {
             }
             else {
                 this.insertFailCount.incrementAndGet();
+                Thread.yield();
             }
         }
 
@@ -179,46 +180,56 @@ class LockfreeLinkedList {
     // Add the node at the end of the list
     public void add(Object data) { 
         while(true) {
-            Node newTailNode = new Node();
-            Node newAuxNode = new Node();
-            newAuxNode.setAuxNode();
-            newAuxNode.setNext(newTailNode);
-            if(this.tail.compareAndSetNext(null, newAuxNode)) {
-                this.tail = newTailNode;  // Update tail immediately
-                tail.data = data;
-                this.length.incrementAndGet();
-                this.addSuccessCount.incrementAndGet();
-                return;
+            // Only try to add nodes when tail is not being updating
+            if(this.tail.nextNode() == null) {
+                Node newTailNode = new Node();
+                Node newAuxNode = new Node();
+                newAuxNode.setAuxNode();
+                newAuxNode.setNext(newTailNode);
+                if(this.tail.compareAndSetNext(null, newAuxNode)) {
+                    tail.data = data;
+                    this.tail = newTailNode;  // Update tail
+                    this.length.incrementAndGet();
+                    this.addSuccessCount.incrementAndGet();
+                    return;
+                }
+                else {
+                    this.addFailCount.incrementAndGet();
+                    Thread.yield();
+                }
             }
             else {
-                this.addFailCount.incrementAndGet();
+                Thread.yield();
             }
         }
     }
 
-    public boolean delete(LockfreeIterator i) {
+    public Object delete(LockfreeIterator i) {
+        Object retObj;
         while(true) {
-            i.update();                 // You cannot miss this.
             // If the iterator is at the end of the list
             if(i.AuxNode.nextNode() == this.tail || 
                this.length.get() == 0)  {
                 this.deleteFailCount.incrementAndGet();
-                return false;
+                return null;
             }
             Node nextAuxNode = i.DataNode.nextNode();
             if(i.AuxNode.compareAndSetNext(i.DataNode, nextAuxNode)) {
                 this.length.decrementAndGet();
                 this.deleteSuccessCount.incrementAndGet();
+                retObj = i.get();
                 break;
             }
             else {
                 this.deleteFailCount.incrementAndGet();
+                Thread.yield();
+                i.update();
             }
         }
         i.update();
-        return true;
+        return retObj;
     }
-    public boolean poll() {
-        return delete(this.begin());
+    public Object poll() {
+        return this.delete(this.begin());
     }
 }
