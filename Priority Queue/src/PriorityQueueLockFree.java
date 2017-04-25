@@ -15,7 +15,7 @@ public class PriorityQueueLockFree<T, E> {
 	
 	
 	
-	//add to the end
+	//add element
 	public boolean add(E input){//PriorityQueueNode previousNode
 		PriorityQueueNode newNode=new PriorityQueueNode((Comparable)input);
 		PriorityQueueNode tempNode=head;//used to iterate through the linked list
