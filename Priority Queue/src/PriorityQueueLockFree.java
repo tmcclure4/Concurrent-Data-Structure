@@ -1,11 +1,33 @@
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Iterable<E> {
+public class PriorityQueueLockFree<E> extends AbstractQueue<E> implements Iterable<E> {
+
+    private class Debug {
+        AtomicInteger addFailCount = new AtomicInteger();
+        AtomicInteger addPassCount = new AtomicInteger();
+        AtomicInteger removeFailCount = new AtomicInteger();
+        AtomicInteger removePassCount = new AtomicInteger();
+    }
+
+    private class Tuple {
+        Node aux;
+        Node data;
+        public Tuple (Node a, Node d) {
+            aux = a;
+            data = d;
+        }
+        public boolean equals(Object o) {
+            Tuple n = (Tuple) o;
+            return (aux == null && n.aux == null || aux.equals(n.aux)) && (data == null && n.data == null || data.equals(n.data));
+        }
+    }
 
     private class Node implements Comparable<Node> {
         E element;
+//        AtomicReference<Tuple> next;
         AtomicReference<Node> nextAux;
         AtomicReference<Node> nextData;
         Comparator<? super E> comparator;
@@ -15,6 +37,7 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
             this.comparator = comparator;
             this.nextAux = new AtomicReference<>(null);
             this.nextData = new AtomicReference<>(null);
+//            this.next = new AtomicReference<>(new Tuple(null, null));
         }
 
         @Override
@@ -38,20 +61,22 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
     private Comparator<? super E> comparator;
     private ReentrantLock addRemoveHeap;
     private Node head;
+    private Debug debug;
 
-    public PriorityQueueLockFree2() {
+    public PriorityQueueLockFree() {
         head = new Node(null, comparator);
         head.nextAux.set(new AuxiliaryNode());
+        debug = new Debug();
     }
 
-    public PriorityQueueLockFree2(Collection<? extends E> c) {
+    public PriorityQueueLockFree(Collection<? extends E> c) {
         this();
         for (E element : c) {
             add(element);
         }
     }
 
-    public PriorityQueueLockFree2(Comparator<? super E> comparator) {
+    public PriorityQueueLockFree(Comparator<? super E> comparator) {
         this();
         this.comparator = comparator;
 
@@ -64,6 +89,31 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
      * @return- boolean value whether the element was added successfully
      */
     public boolean add(E input) {
+//        Node newNode = new Node(input, comparator);
+//        Node newAux = new AuxiliaryNode();
+//        Tuple t = new Tuple(newAux, null);
+//        newNode.next.set(t);
+//        while(true) {
+//            Node thisData = this.head;
+//            Tuple tuple = thisData.next.get();
+//            Node thisAux = tuple.aux;
+//            Node nextData = thisAux.next.get().data;
+//            while(nextData != null && nextData.compareTo(newNode) < 0) {
+//                thisData = nextData;
+//                tuple = thisData.next.get();
+//                thisAux = tuple.aux;
+//                nextData = thisAux.next.get().data;
+//            }
+//            newAux.next.set(new Tuple(null, nextData));
+//            if(thisAux.next.compareAndSet(tuple,newNode)) {
+//                debug.addPassCount.incrementAndGet();
+//                return true;
+//            }
+//            else {
+//                debug.addFailCount.incrementAndGet();
+//                Thread.yield();
+//            }
+//        }
         Node newNode = new Node(input, comparator);
         Node newAux = new AuxiliaryNode();
         newNode.nextAux.set(newAux);
@@ -78,8 +128,14 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
             }
             newAux.nextAux.set(null);
             newAux.nextData.set(nextData);
-            if(thisAux.nextData.compareAndSet(nextData,newNode)) return true;
-            else Thread.yield();
+            if(thisAux.nextData.compareAndSet(nextData,newNode)) {
+                debug.addPassCount.incrementAndGet();
+                return true;
+            }
+            else {
+                debug.addFailCount.incrementAndGet();
+                Thread.yield();
+            }
         }
     }
 
@@ -150,8 +206,7 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
 
 		@Override
 		public void remove() {
-			// TODO Auto-generated method stub
-			
+            PriorityQueueLockFree.this.remove(node);
 		}
     }
 
@@ -189,33 +244,30 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
         Node nextData = thisAux.nextData.get();
         while(true) {
             nextData = thisAux.nextData.get();
-            Node nextAux = null;
-            if(nextData != null)
-                nextAux = nextData.nextAux.get();
-            else return null;
+            if(nextData == null) return null;
+            Node nextAux = nextData.nextAux.get();
             thisAux.nextAux.set(nextAux);
             if(thisAux.nextData.compareAndSet(nextData,nextAux.nextData.get())) {
+                debug.removePassCount.incrementAndGet();
+                update(thisData);
                 break;
-            } else Thread.yield();
+            } else {
+                debug.removeFailCount.incrementAndGet();
+                Thread.yield();
+            }
         }
-        update(thisData);
         return nextData == null? null: nextData.element;
     }
 
     private void update(Node data) {
         Node aux = data.nextAux.get();
         Node next = aux.nextAux.get();
-        if(next == null) return;
-        if(aux instanceof PriorityQueueLockFree2.AuxiliaryNode
-                && !(next instanceof PriorityQueueLockFree2.AuxiliaryNode)) {
-            return;
-        }
-        while(next != null && (next instanceof PriorityQueueLockFree2.AuxiliaryNode)) {
+        while(next != null && (next instanceof PriorityQueueLockFree.AuxiliaryNode)) {
             if (!aux.nextData.get().equals(next.nextData.get()))
-                continue;
-            while (true)
+                break;
+//            while (true)
                 if (data.nextAux.compareAndSet(aux, next)) break;
-                else Thread.yield();
+//                else Thread.yield();
             aux = next;
             next = next.nextAux.get();
         }
@@ -243,8 +295,12 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
             thisAux.nextAux.set(nextAux);
             if(thisAux.nextData.compareAndSet(nextData,nextAux.nextData.get())) {
                 update(thisData);
+                debug.removePassCount.incrementAndGet();
                 break;
-            } else Thread.yield();
+            } else {
+                debug.removeFailCount.incrementAndGet();
+                Thread.yield();
+            }
         }
         return true;
     }
@@ -286,6 +342,11 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
         }
         out += "]";
         return out;
+    }
+    public void debug() {
+//        return debug;
+        System.out.println("Delete Fail: " + debug.removeFailCount.get() + "; delete success: "+ debug.removePassCount.get());
+        System.out.println("Add Fail: " + debug.addFailCount.get() + "; add success: "+ debug.addFailCount.get());
     }
 
 }
