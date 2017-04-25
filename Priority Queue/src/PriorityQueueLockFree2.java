@@ -147,6 +147,12 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
             node = node.nextData.get();
             return node.element;
         }
+
+		@Override
+		public void remove() {
+			// TODO Auto-generated method stub
+			
+		}
     }
 
 

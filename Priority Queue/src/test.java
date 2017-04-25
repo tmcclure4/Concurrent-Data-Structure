@@ -27,6 +27,7 @@ public class test extends Thread{
 			testing.printNodes();
 			System.out.println("out of thread");
 		}
+		testing.toString();
 		
 	}
 	
@@ -34,10 +35,10 @@ public class test extends Thread{
 		
 		test t1 = new test();
 		t1.start();
-		System.out.println("temp");
-		test t2=new test();
+		//System.out.println("temp");
+		//test t2=new test();
 		
-		t2.start();
+		//t2.start();
 		
 
 		/*testing.offer(5);
