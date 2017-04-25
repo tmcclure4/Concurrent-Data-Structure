@@ -7,7 +7,7 @@ public class ConcLockList { //Adapted from Herlihy's Book
   private Node tail;
   public ConcLockList() {
     head      = new Node(Integer.MIN_VALUE);
-    tail      = new Node(Integer.MAX_VALUE);
+    tail      = new Node(null);
     head.next = tail;
   }
   public boolean insert(int index, Object item) {
@@ -40,8 +40,22 @@ public class ConcLockList { //Adapted from Herlihy's Book
       pred.unlock();
     }
   }
-  public boolean remove(int index) {
-    if(index < 0) return false;
+  public void add(Object item) {
+      Node newNode = new Node();
+      Node lastTail = this.tail;
+      lastTail.lock();
+      while(lastTail.next != null)  {
+          lastTail.unlock();
+          lastTail = lastTail.next;
+          lastTail.lock();
+      }
+      lastTail.item = item;
+      lastTail.next = newNode;
+      this.tail = newNode;
+      lastTail.unlock();
+  }
+  public Object remove(int index) {
+    if(index < 0) return null;
     Node pred = null, curr = null;
     int currIndex = 0;
     head.lock();
@@ -51,7 +65,7 @@ public class ConcLockList { //Adapted from Herlihy's Book
       curr.lock();
       try {
         while (currIndex < index) {
-          if(curr == this.tail) return false;
+          if(curr == this.tail) return null;
           currIndex++;
           pred.unlock();
           pred = curr;
@@ -59,7 +73,7 @@ public class ConcLockList { //Adapted from Herlihy's Book
           curr.lock();
         }
         pred.next = curr.next;      // Delete current node
-        return true;
+        return curr.item;
       } finally {
         curr.unlock();
       }
@@ -93,6 +107,9 @@ public class ConcLockList { //Adapted from Herlihy's Book
       pred.unlock();
     }
   }
+  public Object poll() {
+      return remove(0);
+  }
   public boolean contains(Object item) {
     Node pred = null, curr = null;
     head.lock();
@@ -118,7 +135,7 @@ public class ConcLockList { //Adapted from Herlihy's Book
   }
   private class Node {
     Object item;
-    Node next;
+    Node next = null;
     Lock lock;
     Node() {
         this.item = null;
