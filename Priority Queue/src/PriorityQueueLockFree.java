@@ -129,11 +129,11 @@ public class PriorityQueueLockFree<E> extends AbstractQueue<E> implements Iterab
             newAux.nextAux.set(null);
             newAux.nextData.set(nextData);
             if(thisAux.nextData.compareAndSet(nextData,newNode)) {
-                debug.addPassCount.incrementAndGet();
+//                debug.addPassCount.incrementAndGet();
                 return true;
             }
             else {
-                debug.addFailCount.incrementAndGet();
+//                debug.addFailCount.incrementAndGet();
                 Thread.yield();
             }
         }
@@ -244,15 +244,17 @@ public class PriorityQueueLockFree<E> extends AbstractQueue<E> implements Iterab
         Node nextData = thisAux.nextData.get();
         while(true) {
             nextData = thisAux.nextData.get();
-            if(nextData == null) return null;
-            Node nextAux = nextData.nextAux.get();
+            Node nextAux = null;
+            if(nextData != null) {
+                nextAux = nextData.nextAux.get();
+            }
             thisAux.nextAux.set(nextAux);
             if(thisAux.nextData.compareAndSet(nextData,nextAux.nextData.get())) {
-                debug.removePassCount.incrementAndGet();
+//                debug.removePassCount.incrementAndGet();
                 update(thisData);
                 break;
             } else {
-                debug.removeFailCount.incrementAndGet();
+//                debug.removeFailCount.incrementAndGet();
                 Thread.yield();
             }
         }
@@ -266,7 +268,8 @@ public class PriorityQueueLockFree<E> extends AbstractQueue<E> implements Iterab
             if (!aux.nextData.get().equals(next.nextData.get()))
                 break;
 //            while (true)
-                if (data.nextAux.compareAndSet(aux, next)) break;
+//                if (data.nextAux.compareAndSet(aux, next)) break;
+                data.nextAux.compareAndSet(aux, next);
 //                else Thread.yield();
             aux = next;
             next = next.nextAux.get();

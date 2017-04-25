@@ -16,10 +16,10 @@ public class TestFineGrained {
                 testing.add(j.getAndIncrement());
                 testing.add(j.getAndIncrement());
                 synchronized (testing) {
-                    System.out.println(testing.poll());
+                    System.out.println(Thread.currentThread() + " " + testing.poll());
                 }
                 synchronized (testing) {
-                    System.out.println(testing.poll());
+                    System.out.println(Thread.currentThread() + " " + testing.poll());
                 }
 //                System.out.println(testing.peek());
             }
