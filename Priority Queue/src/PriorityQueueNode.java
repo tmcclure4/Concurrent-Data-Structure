@@ -2,12 +2,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 
 public class PriorityQueueNode<T extends Comparable<T>, E> {
-	private PriorityQueueNode next;
-	private PriorityQueueNode previous;
+	private PriorityQueueNode next;//= new PriorityQueueNode(null);
+	private PriorityQueueNode previous;//=new PriorityQueueNode(null);
 	private T data;
 	
 
-	PriorityQueueNode(){}
+	//PriorityQueueNode(){}
 	
 	PriorityQueueNode(T input){
 		this.next=null;
@@ -33,6 +33,9 @@ public class PriorityQueueNode<T extends Comparable<T>, E> {
 	}
 	public void setData(T value){
 		this.data=value;
+	}
+	public boolean hasNext(){
+		return (this.next!=null);
 	}
 	
 	
