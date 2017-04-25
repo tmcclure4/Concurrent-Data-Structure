@@ -1,3 +1,4 @@
-##To-do
-- Add test code
-- Compare performance(?)
+#To-do
+
+[x] Add test code
+[x] Compare performance(?)
