@@ -79,6 +79,7 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
             newAux.nextAux.set(null);
             newAux.nextData.set(nextData);
             if(thisAux.nextData.compareAndSet(nextData,newNode)) return true;
+            else Thread.yield();
         }
     }
 
@@ -189,7 +190,7 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
             thisAux.nextAux.set(nextAux);
             if(thisAux.nextData.compareAndSet(nextData,nextAux.nextData.get())) {
                 break;
-            }
+            } else Thread.yield();
         }
         update(thisData);
         return nextData == null? null: nextData.element;
@@ -208,6 +209,7 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
                 continue;
             while (true)
                 if (data.nextAux.compareAndSet(aux, next)) break;
+                else Thread.yield();
             aux = next;
             next = next.nextAux.get();
         }
@@ -236,7 +238,7 @@ public class PriorityQueueLockFree2<E> extends AbstractQueue<E> implements Itera
             if(thisAux.nextData.compareAndSet(nextData,nextAux.nextData.get())) {
                 update(thisData);
                 break;
-            }
+            } else Thread.yield();
         }
         return true;
     }
